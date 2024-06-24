@@ -23,6 +23,7 @@ logger.add("bot.log", rotation="1 MB")  # Логирование в файл с 
 admin_usernames = os.getenv("ADMIN_USERNAMES", "")
 logger.info(f"Loaded admin usernames: {admin_usernames}")
 
+
 # Инициализация базы данных
 def init_db():
     try:
@@ -41,31 +42,38 @@ def init_db():
     except Exception as e:
         logger.error(f"Error initializing database: {e}")
 
+
 # Функции для работы с базой данных
 def log_message(username, message, direction):
     try:
         conn = sqlite3.connect('users.db')
         c = conn.cursor()
-        c.execute("INSERT INTO messages (username, message, direction) VALUES (?, ?, ?)", (username, message, direction))
+        c.execute("INSERT INTO messages (username, message, direction) VALUES (?, ?, ?)",
+                  (username, message, direction))
         conn.commit()
         conn.close()
+        logger.debug(f"Logged message from {username} (direction: {direction}): {message}")
     except Exception as e:
         logger.error(f"Error logging message: {e}")
+
 
 def fetch_dialogue(username):
     try:
         conn = sqlite3.connect('users.db')
         c = conn.cursor()
-        c.execute("SELECT message, direction, timestamp FROM messages WHERE username = ? ORDER BY timestamp", (username,))
+        c.execute("SELECT message, direction, timestamp FROM messages WHERE username = ? ORDER BY timestamp",
+                  (username,))
         messages = c.fetchall()
         conn.close()
         dialogue = []
         for message, direction, timestamp in messages:
             dialogue.append(f"{timestamp} {'Входящее' if direction == 'incoming' else 'Исходящее'}: {message}")
+        logger.debug(f"Fetched dialogue for {username}: {dialogue}")
         return "\n".join(dialogue)
     except Exception as e:
         logger.error(f"Error fetching dialogue: {e}")
         return "Ошибка при загрузке диалога."
+
 
 def add_user_to_db(username):
     try:
@@ -77,6 +85,7 @@ def add_user_to_db(username):
     except Exception as e:
         logger.error(f"Error adding user to database: {e}")
 
+
 def remove_user_from_db(username):
     try:
         conn = sqlite3.connect('users.db')
@@ -86,6 +95,7 @@ def remove_user_from_db(username):
         conn.close()
     except Exception as e:
         logger.error(f"Error removing user from database: {e}")
+
 
 def delete_messages_user(username):
     try:
@@ -97,6 +107,7 @@ def delete_messages_user(username):
         logger.info(f"Все сообщения пользователя {username} удалены.")
     except Exception as e:
         logger.error(f"Error deleting messages for user: {e}")
+
 
 def is_user_allowed(username):
     admin_usernames = os.getenv("ADMIN_USERNAMES", "").split(',')
@@ -115,6 +126,7 @@ def is_user_allowed(username):
             logger.error(f"Error checking if user is allowed: {e}")
             return False
 
+
 def get_all_users():
     try:
         conn = sqlite3.connect('users.db')
@@ -127,8 +139,10 @@ def get_all_users():
         logger.error(f"Error getting all users: {e}")
         return []
 
+
 # Инициализация базы данных
 init_db()
+
 
 def load_document_text(url: str) -> str:
     """Загружает текст документа по URL Google Docs."""
@@ -140,6 +154,7 @@ def load_document_text(url: str) -> str:
     response.raise_for_status()
     return response.text
 
+
 # Проверка и загрузка API ключей
 api_key = os.getenv("YOUR_API_KEY")
 if api_key is None:
@@ -148,8 +163,10 @@ openai.api_key = api_key
 
 # Загрузка и обработка документов
 try:
-    system = load_document_text('https://docs.google.com/document/d/1U5Y5OumzWOLod48hft018ipcuG2B7o4CzrnMnMgaBfU/edit?usp=sharing')
-    database = load_document_text('https://docs.google.com/document/d/1tA9FUbaDA768R2idA42xohrtz8-HdPJHJAvPet0mgFI/edit?usp=sharing')
+    system = load_document_text(
+        'https://docs.google.com/document/d/1U5Y5OumzWOLod48hft018ipcuG2B7o4CzrnMnMgaBfU/edit?usp=sharing')
+    database = load_document_text(
+        'https://docs.google.com/document/d/1tA9FUbaDA768R2idA42xohrtz8-HdPJHJAvPet0mgFI/edit?usp=sharing')
 except Exception as e:
     logger.error(f"Error loading documents: {e}")
     raise
@@ -160,6 +177,7 @@ source_chunks = [Document(page_content=chunk, metadata={}) for chunk in splitter
 embeddings = OpenAIEmbeddings(openai_api_key=api_key)
 db = FAISS.from_documents(source_chunks, embeddings)
 
+
 class TelegramBot:
     def __init__(self, gpt_instance, search_index):
         self.gpt = gpt_instance
@@ -169,10 +187,12 @@ class TelegramBot:
             raise Exception("Telegram Bot Token не определен в переменных окружения")
         self.bot = telebot.TeleBot(token)
 
+
 bot = TelegramBot(gpt_instance=embeddings, search_index=db).bot
 chat_histories = {}
 chat_summaries = {}
 dialog_states = {}
+
 
 # Функция для создания инлайн клавиатуры
 def create_inline_keyboard():
@@ -188,6 +208,7 @@ def create_inline_keyboard():
     keyboard.add(list_users_button)
     return keyboard
 
+
 # Обработчик команды /admin
 @bot.message_handler(commands=['admin'])
 def admin_panel(message):
@@ -199,6 +220,7 @@ def admin_panel(message):
         bot.send_message(message.chat.id, "Панель администратора:", reply_markup=keyboard)
     else:
         bot.reply_to(message, "У вас нет прав для выполнения этой команды.")
+
 
 # Обработчик инлайн кнопок
 @bot.callback_query_handler(func=lambda call: True)
@@ -221,6 +243,7 @@ def callback_query(call):
     elif call.data == "list_users":
         process_list_users(call.message, username)
 
+
 def process_add_user(message):
     admin_usernames = os.getenv("ADMIN_USERNAMES", "").split(',')
     username = message.from_user.username
@@ -231,6 +254,7 @@ def process_add_user(message):
         bot.reply_to(message, f"Пользователь {new_user} добавлен в список разрешенных.")
     else:
         bot.reply_to(message, "У вас нет прав для выполнения этой команды.")
+
 
 def process_remove_user(message):
     admin_usernames = os.getenv("ADMIN_USERNAMES", "").split(',')
@@ -243,6 +267,7 @@ def process_remove_user(message):
     else:
         bot.reply_to(message, "У вас нет прав для выполнения этой команды.")
 
+
 def process_view_dialogue(message):
     admin_usernames = os.getenv("ADMIN_USERNAMES", "").split(',')
     username = message.from_user.username
@@ -250,10 +275,22 @@ def process_view_dialogue(message):
     if username in admin_usernames:
         view_user = message.text
         dialogue = fetch_dialogue(view_user)
-        logger.debug(f"Dialogue for user {view_user}: {dialogue}")  # Добавляем логирование для проверки
-        bot.reply_to(message, f"Диалог с {view_user}:\n{dialogue}")
+        logger.debug(f"Dialogue for user {view_user}: {dialogue}")
+
+        # Отправка диалога частями, если он слишком длинный
+        MAX_MESSAGE_LENGTH = 4096
+        if dialogue:
+            if len(dialogue) > MAX_MESSAGE_LENGTH:
+                parts = [dialogue[i:i + MAX_MESSAGE_LENGTH] for i in range(0, len(dialogue), MAX_MESSAGE_LENGTH)]
+                for part in parts:
+                    bot.send_message(message.chat.id, part)
+            else:
+                bot.send_message(message.chat.id, dialogue)
+        else:
+            bot.send_message(message.chat.id, "Нет диалога")
     else:
         bot.reply_to(message, "У вас нет прав для выполнения этой команды.")
+
 
 def process_delete_messages(message):
     admin_usernames = os.getenv("ADMIN_USERNAMES", "").split(',')
@@ -266,6 +303,7 @@ def process_delete_messages(message):
     else:
         bot.reply_to(message, "У вас нет прав для выполнения этой команды.")
 
+
 def process_list_users(message, username):
     admin_usernames = os.getenv("ADMIN_USERNAMES", "").split(',')
     logger.debug(f"process_list_users: {username}")
@@ -276,27 +314,28 @@ def process_list_users(message, username):
     else:
         bot.reply_to(message, "У вас нет прав для выполнения этой команды.")
 
+
 # Функция для отправки длинных сообщений с проверкой ссылок
 def send_long_text(chat_id: int, text: str, bot):
     MAX_MESSAGE_LENGTH = 4096  # Максимальная длина сообщения в Telegram
     contains_link = bool(re.search(r'http[s]?://', text))
-    is_final_message = "До встречи в онлайн-школе Rebotica!" in text
-    
+
+    # Отправка сообщения, деление на части если необходимо
     if len(text) <= MAX_MESSAGE_LENGTH:
         bot.send_message(chat_id=chat_id, text=text)
     else:
         parts = [text[i:i + MAX_MESSAGE_LENGTH] for i in range(0, len(text), MAX_MESSAGE_LENGTH)]
         for part in parts:
             bot.send_message(chat_id=chat_id, text=part)
-    
-    # Если текст содержит ссылку или является финальным сообщением, отправляем картинку и сообщение
-    if contains_link or is_final_message:
+
+    # Проверка наличия ссылки
+    if contains_link:
         time.sleep(15)  # Задержка в 15 секунд
         magic_image_path = os.path.join(os.path.dirname(__file__), 'Магия.png')
-        
+
         # Отправляем картинку без текста
         bot.send_photo(chat_id, open(magic_image_path, 'rb'))
-        
+
         # Отправляем текстовое сообщение отдельно
         magic_message = "IT сфера - это современная магия! Поздравляю! Ты большой молодец! Теперь ты знаешь в каком направлении тебе обучаться!"
         bot.send_message(chat_id, magic_message)
@@ -309,10 +348,10 @@ def send_long_text(chat_id: int, text: str, bot):
 def send_welcome(message):
     chat_id = message.chat.id
     resized_welcome_image_path = os.path.join(os.path.dirname(__file__), 'Привет.png')
-    
+
     # Отправляем изображение без текста
     bot.send_photo(chat_id, open(resized_welcome_image_path, 'rb'))
-    
+
     # Отправляем текстовое сообщение отдельно
     welcome_message = """
     На связи Сова!
@@ -324,9 +363,10 @@ def send_welcome(message):
     Я задам тебе несколько вопросов, а ты отвечай - только честно!
     """
     bot.send_message(chat_id, welcome_message)
-    
+
     # Сбрасываем состояние диалога при старте
     dialog_states[chat_id] = "active"
+
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def handle_message(message):
@@ -336,7 +376,8 @@ def handle_message(message):
 
     # Проверяем состояние диалога
     if dialog_states.get(chat_id) == "finished":
-        bot.send_message(chat_id, "👇Ты уже завершил тестирование. Пожалуйста! Если хочешь пройти ещё раз, то нажми кнопку Cтарт в меню.")
+        bot.send_message(chat_id,
+                         "👇Ты уже завершил тестирование. Пожалуйста! Если хочешь пройти ещё раз, то нажми кнопку Cтарт в меню.")
         return
 
     logger.info(f"Received message from {username}: {user_question}")
@@ -362,12 +403,15 @@ def handle_message(message):
 
     # Поиск релевантных отрезков из базы знаний
     docs = db.similarity_search(user_question, k=4)
-    message_content = '\n '.join([f'\nОтрывок документа №{i+1}\n=====================' + doc.page_content + '\n' for i, doc in enumerate(docs)])
+    message_content = '\n '.join(
+        [f'\nОтрывок документа №{i + 1}\n=====================' + doc.page_content + '\n' for i, doc in
+         enumerate(docs)])
 
     # Формирование запроса к OpenAI
     messages = [
         {"role": "system", "content": system},
-        {"role": "user", "content": f"Документ с информацией для ответа клиента: {message_content}\n\nВопрос клиента: {current_summary}"}
+        {"role": "user",
+         "content": f"Документ с информацией для ответа клиента: {message_content}\n\nВопрос клиента: {current_summary}"}
     ]
     try:
         completion = openai.ChatCompletion.create(
@@ -385,5 +429,6 @@ def handle_message(message):
     except Exception as e:
         logger.error(f"Error generating response: {e}")
         bot.reply_to(message, "Произошла ошибка при обработке вашего запроса. Попробуйте позже.")
+
 
 bot.polling(none_stop=True)
