@@ -330,11 +330,11 @@ def send_long_text(chat_id: int, text: str, bot):
 
     # Проверка наличия ссылки
     if contains_link:
-        time.sleep(15)  # Задержка в 15 секунд
-        magic_image_path = os.path.join(os.path.dirname(__file__), 'Магия.png')
+        time.sleep(10)  # Задержка в 10 секунд
 
-        # Отправляем картинку без текста
-        bot.send_photo(chat_id, open(magic_image_path, 'rb'))
+        # Отправляем стикер
+        sticker_file_id = 'CAACAgIAAxkBAAIeeGZ6eXPrVYYAAWRJIHuhRDscfGvq9wACzDcAAkQsqUpvTd4i2f0HnTUE'  # Замените на ваш file_id стикера
+        bot.send_sticker(chat_id, sticker_file_id)
 
         # Отправляем текстовое сообщение отдельно
         magic_message = "IT сфера - это современная магия! Поздравляю! Ты большой молодец! Теперь ты знаешь в каком направлении тебе обучаться!"
@@ -347,26 +347,24 @@ def send_long_text(chat_id: int, text: str, bot):
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     chat_id = message.chat.id
-    resized_welcome_image_path = os.path.join(os.path.dirname(__file__), 'Привет.png')
 
-    # Отправляем изображение без текста
-    bot.send_photo(chat_id, open(resized_welcome_image_path, 'rb'))
+    # Отправляем стикер
+    welcome_sticker_file_id = 'CAACAgIAAxkBAAIedWZ6eTB3dgFVRP0ammpMpEqFR138AAKxOgACR_2hSkN5bfKbzeJFNQQ'  # Замените на ваш file_id стикера
+    bot.send_sticker(chat_id, welcome_sticker_file_id)
 
     # Отправляем текстовое сообщение отдельно
     welcome_message = """
-    На связи Сова!
-    Да, та самая Сова, которая даже ночами не спит, помогает ребятам!
-    Вот, решила пообщаться с тобой лично!
-    Не уверен, в какой сфере IT хочешь развиваться?
-    Нет проблем!
-    Помогу тебе выбрать IT направление или профессию в цифровой экономике!
-    Я задам тебе несколько вопросов, а ты отвечай - только честно!
-    """
+На связи Сова!
+Да, та самая Сова, которая даже ночами не спит, помогает ребятам!
+Вот, решила пообщаться с тобой лично!
+Не уверен, в какой сфере IT хочешь развиваться?
+Нет проблем!
+Помогу тебе выбрать IT направление или профессию в цифровой экономике!
+Я задам тебе несколько вопросов, а ты отвечай - только честно!"""
     bot.send_message(chat_id, welcome_message)
 
     # Сбрасываем состояние диалога при старте
     dialog_states[chat_id] = "active"
-
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def handle_message(message):
