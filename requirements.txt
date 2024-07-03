@@ -16,3 +16,4 @@ pillow==10.3.0
 defusedxml==0.7.1
 fonttools==4.53.0
 fpdf2==2.7.9
+python-dotenv==1.0.1
