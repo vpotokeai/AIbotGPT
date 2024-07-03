@@ -217,7 +217,11 @@ def send_long_text(chat_id: int, text: str, bot):
 
     # Проверка наличия ссылки
     if contains_link:
+<<<<<<< HEAD
         time.sleep(3)  # Задержка в 3 секунд
+=======
+        time.sleep(3)  # Задержка в 3 секунды
+>>>>>>> origin/master
 
         # Отправляем стикер
         sticker_file_id = 'CAACAgIAAxkBAAIeeGZ6eXPrVYYAAWRJIHuhRDscfGvq9wACzDcAAkQsqUpvTd4i2f0HnTUE'  # Замените на ваш file_id стикера
