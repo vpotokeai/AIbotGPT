@@ -164,9 +164,9 @@ openai.api_key = api_key
 # Загрузка и обработка документов
 try:
     system = load_document_text(
-        'https://docs.google.com/document/d/1U5Y5OumzWOLod48hft018ipcuG2B7o4CzrnMnMgaBfU/edit?usp=sharing')
+        'https://docs.google.com/document/d/1MfjPXdgPOkgCZ9EKl2cwxe3D-txBxOnZyanMs_PYCEQ/edit?usp=sharing')
     database = load_document_text(
-        'https://docs.google.com/document/d/1tA9FUbaDA768R2idA42xohrtz8-HdPJHJAvPet0mgFI/edit?usp=sharing')
+        'https://docs.google.com/document/d/1dA5kshnNI8T5D4mTNiWOlqpO_U-Q-b3X1ALdaM4o3EE/edit?usp=sharing')
 except Exception as e:
     logger.error(f"Error loading documents: {e}")
     raise
@@ -194,6 +194,127 @@ chat_summaries = {}
 dialog_states = {}
 
 
+# Функция для создания инлайн клавиатуры
+def create_inline_keyboard():
+    keyboard = types.InlineKeyboardMarkup()
+    add_button = types.InlineKeyboardButton("Добавить юзера", callback_data="add_user")
+    remove_button = types.InlineKeyboardButton("Удалить юзера", callback_data="remove_user")
+    view_button = types.InlineKeyboardButton("Посмотреть диалог", callback_data="view_dialogue")
+    delete_messages_button = types.InlineKeyboardButton("Удалить сообщения", callback_data="delete_messages")
+    list_users_button = types.InlineKeyboardButton("Список юзеров", callback_data="list_users")
+    keyboard.add(add_button, remove_button)
+    keyboard.add(view_button)
+    keyboard.add(delete_messages_button)
+    keyboard.add(list_users_button)
+    return keyboard
+
+
+# Обработчик команды /admin
+@bot.message_handler(commands=['admin'])
+def admin_panel(message):
+    admin_usernames = os.getenv("ADMIN_USERNAMES", "").split(',')
+    username = message.from_user.username
+    logger.debug(f"Username: {username}")
+    if username in admin_usernames:
+        keyboard = create_inline_keyboard()
+        bot.send_message(message.chat.id, "Панель администратора:", reply_markup=keyboard)
+    else:
+        bot.reply_to(message, "У вас нет прав для выполнения этой команды.")
+
+
+# Обработчик инлайн кнопок
+@bot.callback_query_handler(func=lambda call: True)
+def callback_query(call):
+    username = call.from_user.username  # Добавляем правильное получение имени пользователя
+    logger.debug(f"Callback from username: {username}")
+
+    if call.data == "add_user":
+        msg = bot.send_message(call.message.chat.id, "Введите имя пользователя для добавления:")
+        bot.register_next_step_handler(msg, process_add_user)
+    elif call.data == "remove_user":
+        msg = bot.send_message(call.message.chat.id, "Введите имя пользователя для удаления:")
+        bot.register_next_step_handler(msg, process_remove_user)
+    elif call.data == "view_dialogue":
+        msg = bot.send_message(call.message.chat.id, "Введите имя пользователя для просмотра диалога:")
+        bot.register_next_step_handler(msg, process_view_dialogue)
+    elif call.data == "delete_messages":
+        msg = bot.send_message(call.message.chat.id, "Введите имя пользователя для удаления всех сообщений:")
+        bot.register_next_step_handler(msg, process_delete_messages)
+    elif call.data == "list_users":
+        process_list_users(call.message, username)
+
+
+def process_add_user(message):
+    admin_usernames = os.getenv("ADMIN_USERNAMES", "").split(',')
+    username = message.from_user.username
+    logger.debug(f"process_add_user: {username}")
+    if username in admin_usernames:
+        new_user = message.text
+        add_user_to_db(new_user)
+        bot.reply_to(message, f"Пользователь {new_user} добавлен в список разрешенных.")
+    else:
+        bot.reply_to(message, "У вас нет прав для выполнения этой команды.")
+
+
+def process_remove_user(message):
+    admin_usernames = os.getenv("ADMIN_USERNAMES", "").split(',')
+    username = message.from_user.username
+    logger.debug(f"process_remove_user: {username}")
+    if username in admin_usernames:
+        remove_user = message.text
+        remove_user_from_db(remove_user)
+        bot.reply_to(message, f"Пользователь {remove_user} удален из списка разрешенных.")
+    else:
+        bot.reply_to(message, "У вас нет прав для выполнения этой команды.")
+
+
+def process_view_dialogue(message):
+    admin_usernames = os.getenv("ADMIN_USERNAMES", "").split(',')
+    username = message.from_user.username
+    logger.debug(f"process_view_dialogue: {username}")
+    if username in admin_usernames:
+        view_user = message.text
+        dialogue = fetch_dialogue(view_user)
+        logger.debug(f"Dialogue for user {view_user}: {dialogue}")
+
+        # Отправка диалога частями, если он слишком длинный
+        MAX_MESSAGE_LENGTH = 4096
+        if dialogue:
+            if len(dialogue) > MAX_MESSAGE_LENGTH:
+                parts = [dialogue[i:i + MAX_MESSAGE_LENGTH] for i in range(0, len(dialogue), MAX_MESSAGE_LENGTH)]
+                for part in parts:
+                    bot.send_message(message.chat.id, part)
+            else:
+                bot.send_message(message.chat.id, dialogue)
+        else:
+            bot.send_message(message.chat.id, "Нет диалога")
+    else:
+        bot.reply_to(message, "У вас нет прав для выполнения этой команды.")
+
+
+def process_delete_messages(message):
+    admin_usernames = os.getenv("ADMIN_USERNAMES", "").split(',')
+    username = message.from_user.username
+    logger.debug(f"process_delete_messages: {username}")
+    if username in admin_usernames:
+        delete_user = message.text
+        delete_messages_user(delete_user)
+        bot.reply_to(message, f"Все сообщения пользователя {delete_user} удалены.")
+    else:
+        bot.reply_to(message, "У вас нет прав для выполнения этой команды.")
+
+
+def process_list_users(message, username):
+    admin_usernames = os.getenv("ADMIN_USERNAMES", "").split(',')
+    logger.debug(f"process_list_users: {username}")
+    if username in admin_usernames:
+        users = get_all_users()
+        users_list = "\n".join(users)
+        bot.send_message(message.chat.id, f"Список всех пользователей:\n{users_list}")
+    else:
+        bot.reply_to(message, "У вас нет прав для выполнения этой команды.")
+
+
 # Функция для создания клавиатуры с одной кнопкой
 def create_single_button_keyboard(button_text):
     keyboard = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
@@ -217,11 +338,7 @@ def send_long_text(chat_id: int, text: str, bot):
 
     # Проверка наличия ссылки
     if contains_link:
-<<<<<<< HEAD
         time.sleep(3)  # Задержка в 3 секунд
-=======
-        time.sleep(3)  # Задержка в 3 секунды
->>>>>>> origin/master
 
         # Отправляем стикер
         sticker_file_id = 'CAACAgIAAxkBAAIeeGZ6eXPrVYYAAWRJIHuhRDscfGvq9wACzDcAAkQsqUpvTd4i2f0HnTUE'  # Замените на ваш file_id стикера
@@ -233,6 +350,7 @@ def send_long_text(chat_id: int, text: str, bot):
 
         # Устанавливаем состояние завершения диалога
         dialog_states[chat_id] = "finished"
+
 
 # Обработчик команды /start
 @bot.message_handler(commands=['start'])
@@ -255,6 +373,7 @@ def send_welcome(message):
     dialog_states[chat_id] = "awaiting_confirmation"
     logger.debug(f"State set to awaiting_confirmation for chat_id: {chat_id}")
 
+
 # Обработчик текстовых сообщений
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def handle_message(message):
@@ -270,12 +389,14 @@ def handle_message(message):
 
     if dialog_states.get(chat_id) == "awaiting_confirmation":
         if user_message.lower() == "хорошо":
-            bot.send_message(chat_id, "Отлично! И чтобы у нас всё получилось, пожалуйста, отвечай честно! Начнём?", reply_markup=create_single_button_keyboard("Погнали"))
+            bot.send_message(chat_id, "Отлично! И чтобы у нас всё получилось, пожалуйста, отвечай честно! Начнём?",
+                             reply_markup=create_single_button_keyboard("Погнали"))
             bot.send_sticker(chat_id, 'CAACAgIAAxkBAAIfFWaDwyfZI-2yLIza5jHlPCqUBFpeAALsRwACdA2gS_Z0OaZBctWSNQQ')
             dialog_states[chat_id] = "awaiting_ready"
             logger.debug(f"State set to awaiting_ready for chat_id: {chat_id}")
         else:
-            bot.send_message(chat_id, "Чтобы продолжить, просто нажми на кнопку.", reply_markup=create_single_button_keyboard("Хорошо"))
+            bot.send_message(chat_id, "Чтобы продолжить, просто нажми на кнопку👇",
+                             reply_markup=create_single_button_keyboard("Хорошо"))
         return
 
     elif dialog_states.get(chat_id) == "awaiting_ready":
@@ -284,7 +405,8 @@ def handle_message(message):
             logger.debug(f"State set to active for chat_id: {chat_id}")
             bot.send_message(chat_id, "Как тебя зовут?", reply_markup=types.ReplyKeyboardRemove())
         else:
-            bot.send_message(chat_id, "Чтобы продолжить, просто нажми на кнопку.", reply_markup=create_single_button_keyboard("Погнали"))
+            bot.send_message(chat_id, "Чтобы продолжить, просто нажми на кнопку👇",
+                             reply_markup=create_single_button_keyboard("Погнали"))
         return
 
     if dialog_states.get(chat_id) == "active":
@@ -335,6 +457,7 @@ def handle_message(message):
         except Exception as e:
             logger.error(f"Error generating response: {e}")
             bot.reply_to(message, "Произошла ошибка при обработке вашего запроса. Попробуйте позже.")
+
 
 # Запуск бота
 bot.polling(none_stop=True)
