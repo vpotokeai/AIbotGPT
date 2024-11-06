@@ -160,7 +160,7 @@ openai.api_key = api_key
 # Загрузка системного документа
 try:
     system = load_document_text(
-        'https://docs.google.com/document/d/1U5Y5OumzWOLod48hft018ipcuG2B7o4CzrnMnMgaBfU/edit?usp=sharing')
+        'https://docs.google.com/document/')
 except Exception as e:
     logger.error(f"Error loading documents: {e}")
     raise
