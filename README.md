@@ -27,7 +27,7 @@
 
     ```bash
     git clone https://github.com/Voislav-Vpotoke/AIbotGPT.git
-    cd ReboticaAI
+    cd AIbotGPT
     ```
 
 2. **Создайте и активируйте виртуальную среду:**
