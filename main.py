@@ -164,9 +164,9 @@ openai.api_key = api_key
 # Загрузка и обработка документов
 try:
     system = load_document_text(
-        'https://docs.google.com/document/d/1MfjPXdgPOkgCZ9EKl2cwxe3D-txBxOnZyanMs_PYCEQ/edit?usp=sharing')
+        'https://docs.google.com/document/')
     database = load_document_text(
-        'https://docs.google.com/document/d/1dA5kshnNI8T5D4mTNiWOlqpO_U-Q-b3X1ALdaM4o3EE/edit?usp=sharing')
+        'https://docs.google.com/document/')
 except Exception as e:
     logger.error(f"Error loading documents: {e}")
     raise
