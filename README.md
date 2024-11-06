@@ -1,4 +1,4 @@
-# Rebotica AI Telegram Bot
+# AIbotGPT
 
 Этот Telegram-бот создан для помощи пользователям в выборе IT-карьеры или профессии в цифровой экономике. 
 Бот взаимодействует с пользователями через серию вопросов и предоставляет рекомендации на основе их ответов.
@@ -23,7 +23,7 @@
 1. **Клонируйте репозиторий:**
 
     ```bash
-    git clone https://github.com/Voislav-Vpotoke/ReboticaAI.git
+    git clone https://github.com/Voislav-Vpotoke/AIbotGPT.git
     cd ReboticaAI
     ```
 
