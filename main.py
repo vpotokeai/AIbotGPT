@@ -440,10 +440,10 @@ def handle_message(message):
         ]
         try:
             completion = openai.ChatCompletion.create(
-                model="gpt-4o-2024-05-13",
+                model="gpt-4o",
                 messages=messages,
-                temperature=0.6,
-                frequency_penalty=2.0
+                temperature=0.5,
+                frequency_penalty=1.0
             )
             answer = completion.choices[0].message.content
             logger.info(f"Sending answer to {chat_id} ({username}): {answer}")
