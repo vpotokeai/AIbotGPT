@@ -164,9 +164,9 @@ openai.api_key = api_key
 # Загрузка и обработка документов
 try:
     system = load_document_text(
-        'https://docs.google.com/document/')
+        'https://docs.google.com/document/d/1MADrY2IiQHW10mARD3HgFlXdtAIpV79NMounMv6CiwI/edit?usp=sharing')
     database = load_document_text(
-        'https://docs.google.com/document/')
+        'https://docs.google.com/document/d/1H6UzKL7XkKPdJARGAuwF5ST8pplMHBv9kyrAc0xNXdM/edit?usp=sharing')
 except Exception as e:
     logger.error(f"Error loading documents: {e}")
     raise
@@ -341,11 +341,11 @@ def send_long_text(chat_id: int, text: str, bot):
         time.sleep(3)  # Задержка в 3 секунд
 
         # Отправляем стикер
-        sticker_file_id = 'CAACAgIAAxkBAAIeeGZ6eXPrVYYAAWRJIHuhRDscfGvq9wACzDcAAkQsqUpvTd4i2f0HnTUE'  # Замените на ваш file_id стикера
+        sticker_file_id = 'CAACAgIAAxkBAAIeeGZ6eXPrVYYAAWRJIHuhRDscfGvq9wACzDcAAkQsqUpvTd4i2f0HnTUE'  # file_id стикера
         bot.send_sticker(chat_id, sticker_file_id)
 
         # Отправляем текстовое сообщение отдельно
-        magic_message = "IT сфера - это современная магия! Поздравляю! Ты большой молодец! Теперь ты знаешь в каком направлении тебе обучаться!"
+        magic_message = "Нумерология - это магия! Поздравляю!Теперь ты знаешь больше о себе!"
         bot.send_message(chat_id, magic_message)
 
         # Устанавливаем состояние завершения диалога
@@ -361,12 +361,9 @@ def send_welcome(message):
 
     bot.send_sticker(chat_id, 'CAACAgIAAxkBAAIedWZ6eTB3dgFVRP0ammpMpEqFR138AAKxOgACR_2hSkN5bfKbzeJFNQQ')
     welcome_message = """
-Привет, я — Сова!
-Я прилетела к тебе из онлайн школы Реботика,
-в которой ребята изучают цифровые технологии и навыки XXI века, 
-чтобы помочь тебе выбрать направление или профессию, 
-которые тебе подойдут наилучшим образом. 
-Для этого просто ответь на несколько моих вопросов. 
+Привет, я — Нейро Нумеролог!
+Создан, чтобы помочь тебе понять себя лучше. 
+Для этого просто задавай мне вопросы по нумерологии.
 Договорились?"""
     bot.send_message(chat_id, welcome_message, reply_markup=create_single_button_keyboard("Хорошо"))
 
@@ -384,12 +381,12 @@ def handle_message(message):
 
     if dialog_states.get(chat_id) == "finished":
         bot.send_message(chat_id,
-                         "👇Ты уже завершил тестирование. Пожалуйста! Если хочешь пройти ещё раз, то нажми кнопку Cтарт в меню.")
+                         "👇Пожалуйста! Если хочешь задать ещё вопрос, то нажми кнопку Cтарт в меню.")
         return
 
     if dialog_states.get(chat_id) == "awaiting_confirmation":
         if user_message.lower() == "хорошо":
-            bot.send_message(chat_id, "Отлично! И чтобы у нас всё получилось, пожалуйста, отвечай честно! Начнём?",
+            bot.send_message(chat_id, "Отлично! Начнём?",
                              reply_markup=create_single_button_keyboard("Погнали"))
             bot.send_sticker(chat_id, 'CAACAgIAAxkBAAIfFWaDwyfZI-2yLIza5jHlPCqUBFpeAALsRwACdA2gS_Z0OaZBctWSNQQ')
             dialog_states[chat_id] = "awaiting_ready"
